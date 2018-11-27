@@ -7,45 +7,47 @@ import (
 	"time"
 )
 
-// A reader read an event at readCursor and call consumer.Consume(lo,hi)
-type Reader struct {
+// An extend-reader read an event at readCursor and call eventHandler.Consume(lo,hi)
+type XReader struct {
+	eventProvider EventProvider
 	readCursor    *Cursor
 	writtenCursor *Cursor
 	barrier       Barrier
-	consumer      Consumer
+	eventHandler  EventHandler
 	running       bool
 }
 
-func NewReader(readCursor, writtenCursor *Cursor, barrier Barrier, consumer Consumer) *Reader {
-	return &Reader{
+func NewXReader(ep EventProvider, readCursor, writtenCursor *Cursor, barrier Barrier, eventHandler EventHandler) *XReader {
+	return &XReader{
+		eventProvider: ep,
 		readCursor:    readCursor,
 		writtenCursor: writtenCursor,
 		barrier:       barrier,
-		consumer:      consumer,
+		eventHandler:  eventHandler,
 		running:       false,
 	}
 }
 
-func (r *Reader) Start() {
+func (r *XReader) Start() {
 	r.running = true
 	go r.consume()
 }
 
-func (r *Reader) Stop() {
+func (r *XReader) Stop() {
 	r.running = false
 }
 
 // readCursor < writerCursor
 // readCursor < dependentReaderCursor
 // writerCursor < min(readCursors)
-func (r *Reader) consume() {
+func (r *XReader) consume() {
 	current := r.readCursor.Load()
 	idling, gating := 0, 0
 	for {
 		next := current + 1
 		maxRead := r.barrier.Read(next)
 		if next <= maxRead {
-			r.consumer.Consume(next, maxRead)
+			r.doConsume(next, maxRead)
 			r.readCursor.Store(maxRead)
 			current = maxRead
 		} else if maxRead = r.writtenCursor.Load(); next <= maxRead {
@@ -64,5 +66,12 @@ func (r *Reader) consume() {
 		// sleeping increases the batch size which reduces number of writes required to store the sequence
 		// reducing the number of writes allows the CPU to optimize the pipeline without prediction failures
 		runtime.Gosched()
+	}
+}
+
+func (r *XReader) doConsume(lo int64, hi int64) {
+	for sequence := lo; sequence <= hi; sequence++ {
+		e := r.eventProvider.Published(sequence)
+		r.eventHandler.OnEvent(e, sequence)
 	}
 }

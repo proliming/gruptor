@@ -5,13 +5,15 @@ package gruptor
 import "testing"
 
 func BenchmarkCompositeBarrierWithOneCursor_Read(b *testing.B) {
-	cBarrier := NewCompositeBarrier(NewCursor())
+	var barrier Barrier = NewCursor()
+	//cBarrier := NewCompositeBarrier(NewCursor())
 	times := int64(b.N)
-	b.ResetTimer()
 	b.ReportAllocs()
+	b.ResetTimer()
 	for i := int64(0); i < times; i++ {
-		cBarrier.Read(i)
+		barrier.Read(0)
 	}
+
 }
 
 func BenchmarkCompositeBarrierWithMoreCursor_Read(b *testing.B) {
@@ -21,6 +23,6 @@ func BenchmarkCompositeBarrierWithMoreCursor_Read(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := int64(0); i < times; i++ {
-		cBarrier.Read(i)
+		cBarrier.Read(0)
 	}
 }

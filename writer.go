@@ -57,10 +57,6 @@ func (w *SingleWriter) Await(next int64) {
 	}
 }
 
-func (w *SingleWriter) Commit(lower, upper int64) {
-	w.writtenCursor.Store(upper)
-}
-
 type MultiWriter struct {
 	writtenCursor *Cursor
 	upstream      Barrier

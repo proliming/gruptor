@@ -2,40 +2,33 @@
 // Author: liming.one@bytedance.com
 package gruptor
 
-const (
-	MaxSequenceValue     int64 = (1 << 63) - 1
-	InitialSequenceValue int64 = -1
-	CpuCacheLinePadding        = 7
-)
-
 type Gruptor struct {
-	bufferSize    int64
-	eventFactory  EventFactory
-	ringBuffer    *RingBuffer
-	eventHandlers [][]EventHandler
-	cursors       []*Cursor
-	writer        Writer
-	readers       []*Reader
+	bufferSize int64
+	consumers  [][]Consumer
+	cursors    []*Cursor
+	writer     Writer
+	readers    []*Reader
 }
 
-func NewGruptor(bufferSize int64, eventFactory EventFactory) *Gruptor {
+type Consumer interface {
+	Consume(lo, hi int64)
+}
+
+func NewGruptor(bufferSize int64) *Gruptor {
 	g := &Gruptor{
-		eventFactory: eventFactory,
-		bufferSize:   bufferSize,
-		ringBuffer:   NewRingBuffer(bufferSize),
-		cursors:      []*Cursor{NewCursor()},
+		bufferSize: bufferSize,
+		cursors:    []*Cursor{NewCursor()},
 	}
-	g.fillBy(eventFactory)
 	return g
 }
 
-func (g *Gruptor) HandleEventWith(eventHandlers ...EventHandler) *Gruptor {
-	target := make([]EventHandler, len(eventHandlers))
-	copy(target, eventHandlers)
-	for i := 0; i < len(eventHandlers); i++ {
+func (g *Gruptor) HandleEventWith(consumers ...Consumer) *Gruptor {
+	target := make([]Consumer, len(consumers))
+	copy(target, consumers)
+	for i := 0; i < len(consumers); i++ {
 		g.cursors = append(g.cursors, NewCursor())
 	}
-	g.eventHandlers = append(g.eventHandlers, target)
+	g.consumers = append(g.consumers, target)
 	return g
 }
 
@@ -45,13 +38,13 @@ func (g *Gruptor) Build() *Gruptor {
 	var barrier Barrier = g.cursors[0]
 	cursorIndex := 1 // 0 index is reserved for the writer Cursor
 
-	for ehIndex, eh := range g.eventHandlers {
-		readers, readerBarrier := g.buildReaders(ehIndex, cursorIndex, writtenCursor, barrier)
+	for csrIndex, csr := range g.consumers {
+		readers, readerBarrier := g.buildReaders(csrIndex, cursorIndex, writtenCursor, barrier)
 		for _, r := range readers {
 			allReaders = append(allReaders, r)
 		}
 		barrier = readerBarrier
-		cursorIndex += len(eh)
+		cursorIndex += len(csr)
 	}
 	writer := NewSingleWriter(writtenCursor, barrier, g.bufferSize)
 	g.readers = allReaders
@@ -66,13 +59,13 @@ func (g *Gruptor) BuildMultiWriter() *Gruptor {
 	var barrier Barrier = writerBarrier
 	cursorIndex := 1 // 0 index is reserved for the writer Cursor
 
-	for ehIndex, eh := range g.eventHandlers {
-		readers, readerBarrier := g.buildReaders(ehIndex, cursorIndex, writtenCursor, barrier)
+	for csrIndex, csr := range g.consumers {
+		readers, readerBarrier := g.buildReaders(csrIndex, cursorIndex, writtenCursor, barrier)
 		for _, r := range readers {
 			allReaders = append(allReaders, r)
 		}
 		barrier = readerBarrier
-		cursorIndex += len(eh)
+		cursorIndex += len(csr)
 	}
 	writer := NewMultiWriter(writerBarrier, barrier)
 	g.readers = allReaders
@@ -80,18 +73,18 @@ func (g *Gruptor) BuildMultiWriter() *Gruptor {
 	return g
 }
 
-func (g *Gruptor) buildReaders(ehIndex, cursorIndex int, writtenCursor *Cursor, barrier Barrier) ([]*Reader, Barrier) {
+func (g *Gruptor) buildReaders(csrIndex, cursorIndex int, writtenCursor *Cursor, barrier Barrier) ([]*Reader, Barrier) {
 	var barrierCursors []*Cursor
 	var readers []*Reader
 
-	for _, eh := range g.eventHandlers[ehIndex] {
+	for _, csr := range g.consumers[csrIndex] {
 		readCursor := g.cursors[cursorIndex]
 		barrierCursors = append(barrierCursors, readCursor)
-		reader := NewReader(g.ringBuffer, readCursor, writtenCursor, barrier, eh)
+		reader := NewReader(readCursor, writtenCursor, barrier, csr)
 		readers = append(readers, reader)
 		cursorIndex++
 	}
-	if len(g.eventHandlers[ehIndex]) == 1 {
+	if len(g.consumers[csrIndex]) == 1 {
 		return readers, barrierCursors[0]
 	} else {
 		return readers, NewCompositeBarrier(barrierCursors...)
@@ -103,37 +96,14 @@ func (g *Gruptor) Publish(sequence int64) {
 	g.writer.Commit(sequence, sequence)
 }
 
-// Direct publish an event, this method will replace the value at the specified sequence.
-// Please try the-normal-way to avoid gc.
-// sequence:=g.Writer().Next()
-// event:=g.Get(sequence)
-// event.Data=xxx
-// g.Publish(sequence)
-func (g *Gruptor) DirectPublish(e Event) {
-	sequence := g.writer.Next()
-	g.Set(sequence, e)
-	g.writer.Commit(sequence, sequence)
-}
-
 // Return the writer of this Gruptor
 func (g *Gruptor) Writer() Writer {
 	return g.writer
 }
 
-// Return pre-filled Event of this Gruptor at the specified sequence
-func (g *Gruptor) Get(sequence int64) Event {
-	return g.ringBuffer.Get(sequence)
-}
-
-// Replace Event at the specified sequence by new Event
-// This method may cause more gc.
-func (g *Gruptor) Set(sequence int64, v Event) {
-	g.ringBuffer.Set(sequence, v)
-}
-
 // Start all readers for consuming Event
 func (g *Gruptor) Start() {
-	if len(g.eventHandlers) == 0 {
+	if len(g.consumers) == 0 {
 		panic("No event-handlers setup for Gruptor")
 	}
 	if g.writer == nil {
@@ -148,10 +118,5 @@ func (g *Gruptor) Start() {
 func (g *Gruptor) Stop() {
 	for _, r := range g.readers {
 		r.Stop()
-	}
-}
-func (g *Gruptor) fillBy(factory EventFactory) {
-	for i := int64(0); i < g.ringBuffer.bufferSize; i++ {
-		g.ringBuffer.buf[i] = factory.NewEvent()
 	}
 }
