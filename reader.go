@@ -49,12 +49,12 @@ func (r *Reader) consume() {
 			r.readCursor.Store(maxRead)
 			current = maxRead
 		} else if maxRead = r.writtenCursor.Load(); next <= maxRead {
-			time.Sleep(time.Microsecond)
+			time.Sleep(time.Nanosecond)
 			// Gating--TODO: wait strategy (provide gating count to wait strategy for phased backoff)
 			gating++
 			idling = 0
 		} else if r.running {
-			time.Sleep(time.Millisecond)
+			time.Sleep(time.Nanosecond)
 			// Idling--TODO: wait strategy (provide idling count to wait strategy for phased backoff)
 			idling++
 			gating = 0
