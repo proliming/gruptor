@@ -11,9 +11,7 @@ const SpinMask = 1024*16 - 1 // arbitrary; we'll want to experiment with differe
 
 type Writer interface {
 	Next() int64
-
 	NextN(n int64) int64
-
 	Commit(lo, hi int64)
 }
 
@@ -37,7 +35,14 @@ func NewSingleWriter(writtenCursor *Cursor, barrier Barrier, bufferSize int64) *
 }
 
 func (w *SingleWriter) Next() int64 {
-	return w.NextN(1)
+	w.next += 1
+	for spin := int64(0); w.next-w.bufferSize > w.gate; spin++ {
+		if spin&SpinMask == 0 {
+			runtime.Gosched()
+		}
+		w.gate = w.barrier.Read(0)
+	}
+	return w.next
 }
 
 func (w *SingleWriter) NextN(n int64) int64 {
@@ -80,7 +85,21 @@ func NewMultiWriter(barrier *MultiWriterBarrier, upstream Barrier) *MultiWriter 
 }
 
 func (w *MultiWriter) Next() int64 {
-	return w.NextN(1)
+	for {
+		next := w.writtenCursor.Load()
+		upper := next + 1
+
+		for spin := int64(0); upper-w.bufferSize > w.gate.Load(); spin++ {
+			if spin&SpinMask == 0 {
+				runtime.Gosched() // LockSupport.parkNanos(1L); http://bit.ly/1xiDINZ
+			}
+			w.gate.Store(w.upstream.Read(0))
+		}
+
+		if atomic.CompareAndSwapInt64(&w.writtenCursor.sequence, next, upper) {
+			return upper
+		}
+	}
 }
 
 func (w *MultiWriter) NextN(n int64) int64 {

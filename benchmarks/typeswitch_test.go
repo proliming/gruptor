@@ -1,6 +1,6 @@
 // Description:
 // Author: liming.one@bytedance.com
-package gruptor
+package benchmarks
 
 import "testing"
 

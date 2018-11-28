@@ -10,12 +10,10 @@ import (
 	"time"
 )
 
-var ringBuffer [DefaultBufferSize]int64
-
-type AConsumer struct {
+type AnEventHandler struct {
 }
 
-func (c *AConsumer) Consume(lo, hi int64) {
+func (eh *AnEventHandler) OnEvent(event Event, sequence int64) error {
 	for lo <= hi {
 		event := ringBuffer[lo&DefaultBufferMask]
 		if event != lo {
@@ -27,7 +25,7 @@ func (c *AConsumer) Consume(lo, hi int64) {
 	}
 }
 
-func BenchmarkGruptor_OneWriterOneConsumer(b *testing.B) {
+func BenchmarkGruptorX_OneWriterOneConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 
 	runtime.GOMAXPROCS(1)
@@ -52,7 +50,7 @@ func BenchmarkGruptor_OneWriterOneConsumer(b *testing.B) {
 
 	b.StopTimer()
 }
-func BenchmarkGruptor_OneWriterOneConsumerMoreCPU(b *testing.B) {
+func BenchmarkGruptorX_OneWriterOneConsumerMoreCPU(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	defer runtime.GOMAXPROCS(1)
@@ -74,7 +72,7 @@ func BenchmarkGruptor_OneWriterOneConsumerMoreCPU(b *testing.B) {
 
 	b.StopTimer()
 }
-func BenchmarkGruptor_OneWriterMultiConsumer(b *testing.B) {
+func BenchmarkGruptorX_OneWriterMultiConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 	runtime.GOMAXPROCS(1)
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}, &AConsumer{}, &AConsumer{}).Build()
@@ -96,7 +94,7 @@ func BenchmarkGruptor_OneWriterMultiConsumer(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkGruptor_MultiWriterOneConsumer(b *testing.B) {
+func BenchmarkGruptorX_MultiWriterOneConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 	runtime.GOMAXPROCS(2)
 	defer runtime.GOMAXPROCS(1)
@@ -120,7 +118,7 @@ func BenchmarkGruptor_MultiWriterOneConsumer(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkGruptor_MultiWriterMultiConsumer(b *testing.B) {
+func BenchmarkGruptorX_MultiWriterMultiConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 	runtime.GOMAXPROCS(1)
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}, &AConsumer{}, &AConsumer{}).BuildConcurrent()
@@ -143,7 +141,7 @@ func BenchmarkGruptor_MultiWriterMultiConsumer(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkGruptor_MultiWriterOneConsumerInMultiGoroutines(b *testing.B) {
+func BenchmarkGruptorX_MultiWriterOneConsumerInMultiGoroutines(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	defer runtime.GOMAXPROCS(1)

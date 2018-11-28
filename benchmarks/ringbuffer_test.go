@@ -1,77 +1,80 @@
 // Description:
 // Author: liming.one@bytedance.com
-package gruptor
+package benchmarks
 
-import "testing"
+import (
+	"gruptor"
+	"testing"
+)
 
 func BenchmarkRingBuffer_Get(b *testing.B) {
-	rb := DefaultRingBuffer()
+	rb := gruptor.DefaultRingBuffer()
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := int64(0); i < times; i++ {
-		rb.Get(i % DefaultBufferSize)
+		rb.Get(i % gruptor.DefaultBufferSize)
 	}
 }
 
 func BenchmarkRingBuffer_Published(b *testing.B) {
-	rb := DefaultRingBuffer()
+	rb := gruptor.DefaultRingBuffer()
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := int64(0); i < times; i++ {
-		rb.Published(i % DefaultBufferSize)
+		rb.Published(i % gruptor.DefaultBufferSize)
 	}
 }
 
 func BenchmarkRingBuffer_Set(b *testing.B) {
-	rb := DefaultRingBuffer()
+	rb := gruptor.DefaultRingBuffer()
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := int64(0); i < times; i++ {
-		rb.Set(i%DefaultBufferSize, i)
+		rb.Set(i%gruptor.DefaultBufferSize, i)
 	}
 }
 
 func BenchmarkCustomRingBuffer_Get(b *testing.B) {
-	rb := make([]int64, DefaultBufferSize)
+	rb := make([]int64, gruptor.DefaultBufferSize)
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := int64(0); i < times; i++ {
-		x := rb[i%DefaultBufferSize&DefaultBufferMask]
+		x := rb[i%gruptor.DefaultBufferSize&gruptor.DefaultBufferMask]
 		x = x - 0
 	}
 }
 func BenchmarkCustomRingBuffer_Set(b *testing.B) {
-	rb := make([]int64, DefaultBufferSize)
+	rb := make([]int64, gruptor.DefaultBufferSize)
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := int64(0); i < times; i++ {
-		rb[i%DefaultBufferSize&DefaultBufferMask] = i
+		rb[i%gruptor.DefaultBufferSize&gruptor.DefaultBufferMask] = i
 	}
 }
 
 func BenchmarkCustomRingBufferWithEvent_Get(b *testing.B) {
-	rb := make([]Event, DefaultBufferSize)
+	rb := make([]gruptor.Event, gruptor.DefaultBufferSize)
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := int64(0); i < times; i++ {
-		rb[i%DefaultBufferSize&DefaultBufferMask] = nil
+		rb[i%gruptor.DefaultBufferSize&gruptor.DefaultBufferMask] = nil
 	}
 }
 func BenchmarkCustomRingBufferWithEvent_Set(b *testing.B) {
-	rb := make([]Event, DefaultBufferSize)
+	rb := make([]gruptor.Event, gruptor.DefaultBufferSize)
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := int64(0); i < times; i++ {
-		rb[i%DefaultBufferSize&DefaultBufferMask] = i
+		rb[i%gruptor.DefaultBufferSize&gruptor.DefaultBufferMask] = i
 	}
 }

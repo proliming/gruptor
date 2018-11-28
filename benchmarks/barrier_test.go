@@ -1,12 +1,15 @@
 // Description:
 // Author: liming.one@bytedance.com
-package gruptor
+package benchmarks
 
-import "testing"
+import (
+	"gruptor"
+	"testing"
+)
 
 func BenchmarkCompositeBarrierWithOneCursor_Read(b *testing.B) {
-	var barrier Barrier = NewCursor()
-	//cBarrier := NewCompositeBarrier(NewCursor())
+	var barrier gruptor.Barrier = gruptor.NewCursor()
+	//cBarrier := NewCompositeBarrier(gruptor.NewCursor())
 	times := int64(b.N)
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -17,7 +20,7 @@ func BenchmarkCompositeBarrierWithOneCursor_Read(b *testing.B) {
 }
 
 func BenchmarkCompositeBarrierWithMoreCursor_Read(b *testing.B) {
-	cBarrier := NewCompositeBarrier(NewCursor(), NewCursor(), NewCursor(), NewCursor(), NewCursor(), NewCursor())
+	cBarrier := gruptor.NewCompositeBarrier(gruptor.NewCursor(), gruptor.NewCursor(), gruptor.NewCursor(), gruptor.NewCursor(), gruptor.NewCursor(), gruptor.NewCursor())
 	times := int64(b.N)
 	b.ResetTimer()
 	b.ReportAllocs()

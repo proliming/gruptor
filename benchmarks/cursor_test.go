@@ -1,11 +1,14 @@
 // Description:
 // Author: liming.one@bytedance.com
-package gruptor
+package benchmarks
 
-import "testing"
+import (
+	"gruptor"
+	"testing"
+)
 
 func BenchmarkCursor_Load(b *testing.B) {
-	cur := NewCursor()
+	cur := gruptor.NewCursor()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -14,7 +17,7 @@ func BenchmarkCursor_Load(b *testing.B) {
 }
 
 func BenchmarkCursor_Store(b *testing.B) {
-	cur := NewCursor()
+	cur := gruptor.NewCursor()
 	times := int64(b.N)
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -25,7 +28,7 @@ func BenchmarkCursor_Store(b *testing.B) {
 }
 
 func BenchmarkCursor_Read(b *testing.B) {
-	cur := NewCursor()
+	cur := gruptor.NewCursor()
 	times := int64(b.N)
 	b.ReportAllocs()
 	b.ResetTimer()

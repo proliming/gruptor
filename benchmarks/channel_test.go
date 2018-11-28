@@ -1,8 +1,9 @@
 // Description:
 // Author: liming.one@bytedance.com
-package gruptor
+package benchmarks
 
 import (
+	"gruptor"
 	"runtime"
 	"testing"
 )
@@ -73,7 +74,7 @@ func BenchmarkUnBlockingThreeGoroutinesWithContendedWrite(b *testing.B) {
 func benchmarkUnBlocking(b *testing.B, writers int64) {
 	times := int64(b.N)
 	maxReads := times * writers
-	channel := make(chan int64, DefaultBufferSize)
+	channel := make(chan int64, gruptor.DefaultBufferSize)
 
 	b.ReportAllocs()
 	b.ResetTimer()

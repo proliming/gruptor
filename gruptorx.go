@@ -2,12 +2,6 @@
 // Author: liming.one@bytedance.com
 package gruptor
 
-const (
-	MaxSequenceValue     int64 = (1 << 63) - 1
-	InitialSequenceValue int64 = -1
-	CpuCacheLinePadding        = 7
-)
-
 // A extend Gruptor with more friendly API, but a little cost.
 type XGruptor struct {
 	bufferSize    int64
@@ -60,7 +54,7 @@ func (g *XGruptor) Build() *XGruptor {
 	return g
 }
 
-func (g *XGruptor) BuildMultiWriter() *XGruptor {
+func (g *XGruptor) BuildCurrent() *XGruptor {
 	var allReaders []*XReader
 	writtenCursor := g.cursors[0]
 	writerBarrier := NewMultiWriterBarrier(writtenCursor, g.bufferSize)
