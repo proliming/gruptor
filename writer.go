@@ -95,7 +95,6 @@ func (w *MultiWriter) Next() int64 {
 			}
 			w.gate.Store(w.upstream.Read(0))
 		}
-
 		if atomic.CompareAndSwapInt64(&w.writtenCursor.sequence, next, upper) {
 			return upper
 		}

@@ -29,9 +29,8 @@ func (c *AConsumer) Consume(lo, hi int64) {
 
 func BenchmarkGruptor_OneWriterOneConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-
-	runtime.GOMAXPROCS(1)
-
+	previousN := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(previousN)
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).Build()
 	g.Start()
 	defer g.Stop()
@@ -54,8 +53,8 @@ func BenchmarkGruptor_OneWriterOneConsumer(b *testing.B) {
 }
 func BenchmarkGruptor_OneWriterOneConsumerMoreCPU(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(previousN)
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).Build()
 	g.Start()
 	defer g.Stop()
@@ -76,7 +75,7 @@ func BenchmarkGruptor_OneWriterOneConsumerMoreCPU(b *testing.B) {
 }
 func BenchmarkGruptor_OneWriterMultiConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-	runtime.GOMAXPROCS(1)
+
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}, &AConsumer{}, &AConsumer{}).Build()
 	g.Start()
 	defer g.Stop()
@@ -98,9 +97,8 @@ func BenchmarkGruptor_OneWriterMultiConsumer(b *testing.B) {
 
 func BenchmarkGruptor_MultiWriterOneConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-	runtime.GOMAXPROCS(2)
-	defer runtime.GOMAXPROCS(1)
-	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).Build()
+
+	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).BuildConcurrent()
 	g.Start()
 	defer g.Stop()
 
@@ -122,7 +120,7 @@ func BenchmarkGruptor_MultiWriterOneConsumer(b *testing.B) {
 
 func BenchmarkGruptor_MultiWriterMultiConsumer(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-	runtime.GOMAXPROCS(1)
+
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}, &AConsumer{}, &AConsumer{}).BuildConcurrent()
 	g.Start()
 	defer g.Stop()
@@ -145,8 +143,8 @@ func BenchmarkGruptor_MultiWriterMultiConsumer(b *testing.B) {
 
 func BenchmarkGruptor_MultiWriterOneConsumerInMultiGoroutines(b *testing.B) {
 	defer time.Sleep(time.Millisecond)
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(previousN)
 	g := NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).BuildConcurrent()
 	g.Start()
 	defer g.Stop()

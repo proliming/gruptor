@@ -8,23 +8,23 @@ import (
 	"testing"
 )
 
-const BenchmarkDefaultBufferSize = 1024 * 16
+const BenchmarkDefaultBufferSize = 1024 * 64
 
 func BenchmarkBlockingOneGoroutine(b *testing.B) {
-	runtime.GOMAXPROCS(1)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkBlocking(b, 1)
 }
 
 func BenchmarkBlockingTwoGoroutines(b *testing.B) {
-	runtime.GOMAXPROCS(2)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkBlocking(b, 1)
 }
 
 func BenchmarkBlockingThreeGoroutinesWithContendedWrite(b *testing.B) {
-	runtime.GOMAXPROCS(3)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkBlocking(b, 2)
 }
 
@@ -55,19 +55,19 @@ func benchmarkBlocking(b *testing.B, writers int64) {
 
 //----------------------- Unblocking -------------------//
 func BenchmarkUnBlockingOneGoroutine(b *testing.B) {
-	runtime.GOMAXPROCS(1)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkUnBlocking(b, 1)
 }
 
 func BenchmarkUnBlockingTwoGoroutines(b *testing.B) {
-	runtime.GOMAXPROCS(2)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(2)
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkUnBlocking(b, 1)
 }
 func BenchmarkUnBlockingThreeGoroutinesWithContendedWrite(b *testing.B) {
-	runtime.GOMAXPROCS(3)
-	defer runtime.GOMAXPROCS(1)
+	previousN := runtime.GOMAXPROCS(3)
+	defer runtime.GOMAXPROCS(previousN)
 	benchmarkUnBlocking(b, 2)
 }
 

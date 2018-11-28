@@ -3,7 +3,7 @@
 package gruptor
 
 const (
-	DefaultBufferSize = 1024 * 16
+	DefaultBufferSize = 1024 * 64
 	DefaultBufferMask = DefaultBufferSize - 1
 )
 
