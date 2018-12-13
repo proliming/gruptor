@@ -1,5 +1,5 @@
 # gruptor
-Gruptor is a basic port of Disruptor (JAVA) . It's very fast!
+Gruptor is a basic port of Disruptor (JAVA) . It's very fast by using lock-free ringbuffer
 
 
 ```go
