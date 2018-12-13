@@ -1,7 +1,5 @@
 # gruptor
-Gruptor is an extend of smartystreets' [go-disruptor](https://github.com/smartystreets/go-disruptor) with more convenient API.
-
-It's very fast!
+Gruptor is a basic port of Disruptor (JAVA) . It's very fast!
 
 
 ```go
