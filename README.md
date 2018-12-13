@@ -1,5 +1,60 @@
-# gruptor
+# Gruptor
 Gruptor is a basic port of Disruptor (JAVA) . It's very fast by using lock-free ringbuffer
+
+# Usage
+
+## Gruptor
+
+```go
+
+const DefaultBufferSize = 1024  // must be 2,4,8,..1024...
+const DefaultBufferMask = DefaultBufferSize -1
+
+var ringBuffer [DefaultBufferSize]int64  // specified an ringBuffer 
+
+// implements your own Consumer
+type AConsumer struct {
+}
+
+func (c *AConsumer) Consume(lo, hi int64) {
+	for lo <= hi {
+		event := ringBuffer[lo&DefaultBufferMask]
+		if event != lo {
+			warning := fmt.Sprintf("\nRace condition--Sequence: %d, Event: %d\n", lo, event)
+			fmt.Printf(warning)
+			panic(warning)
+		}
+		lo++
+	}
+}
+
+// Create the gruptor
+g := gruptor.NewBuilder(DefaultBufferSize).HandleEventWith(&AConsumer{}).Build()
+g.Start()
+defer g.Stop()
+
+
+// using Writer to acquiring next sequence
+w := g.Writer()
+var sequence int64
+
+for sequence < 100000 {
+	sequence = w.Next()
+	ringBuffer[sequence&DefaultBufferMask] = sequence
+	w.Commit(sequence, sequence)
+}
+
+```
+### GruptorX
+
+```go
+// TODO add some example
+```
+
+
+
+
+
 
 
 ```go
